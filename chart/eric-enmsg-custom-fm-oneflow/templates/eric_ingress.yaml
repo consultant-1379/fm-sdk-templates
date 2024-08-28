@@ -1,0 +1,17 @@
+{{- if and .Values.global.ericIngress.enabled .Values.global.ip_version (or (eq .Values.global.ip_version "Dual") (eq .Values.global.ip_version "IPv4")) }}
+apiVersion: routing.ericingress.ericsson.com/v1alpha1
+kind: EricIngress
+metadata:
+  name: eric-enmsg-custom-fm-oneflow
+spec:
+  virtualServiceIP: {{ .Values.global.vips.fm_vip_address }}
+  backends:
+    name: eric-enmsg-custom-fm-oneflow
+    config:
+      - ports:
+          vipPort: 162
+          svcPort: 162
+        protocol: udp
+        algo: rr
+        mode: nat
+{{- end }}

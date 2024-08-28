@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="utf-8"?>
+<configEntity xmlns="http://www.ericsson.com/oss/itpf/deployment/dst/descriptor">
+    <description>fmsdk</description>
+    <singleton>true</singleton>
+    <scaleUnit>
+        <loadDrivers>
+            <!-- From here on are Load Drivers for number of nodes for RAN-->
+            <loadDriver name="alarmInflowPerDay" description="keyDimensioningValue for FM covering the total number of alarms per day covering base from all supported network elements" />
+            <loadDriver name="numberOfNodes" description="mssnmpfm contribution to keyDimensioningValue for FM covering the total number of supported network elements in a deployment" />
+            <loadDriver name="numberConcurrentConnectionsToManagedNetwork" description="keyDimensioningValue caclulation taking the contribution for all FM mediaiton components, included in mssnmpfm as msfm and msapgfm are speciofically for a small set of network elements" />
+            <loadDriver name="numberSdkIntegratedNe" description="ENM FM SDK support can be introduced for SNMP Network Elements that are not natively supported by ENM, ENM-UNSUPP-01-3 Medium, ENM-UNSUPP-01-2 Large. ENM-UNSUPP-01-8 Large Transport and  ENM-UNSUPP-01-1 Extra Large ENM, ENM-UNSUPP-01-11 Extra Large Cloud Native ENM ENM-UNSUPP-01-12 Extra Large ENM on Rack supports up to 5000 non natively managed Network elements. ENM-UNSUPP-01-5 Small ENM on Openstack ENM-UNSUPP-01-4 Small Integrated Multi TEchnology ENM-UNSUPP-01-9 Small Cloud Native ENM   Supports up to 1893 network elements, ENM-UNSUPP-01-6 Small Integrated Transport Only and ENM-UNSUPP-01-10 Optimized Small Integrated Transport Only support up to 5000 .  ENM-UNSUPP-01-7 Extra SMall ENM support up to 293 network elements, " />
+            <loadDriver name="minimumSDKServiceGroupMemMB" description="(Value = 2109 MB) Load Driver to account for basic Service Group Memory Profile of OS+heap+permgent+nio" />
+            <!-- LOAD DRIVERS FOR DEPENDENCIES -->
+            <loadDriver name="baseAlarmRatePerSecondSdk" description="reuse value set in mssnmpfm based on stated capability in FM alarm control and display which is 0.000955 base alarm rate per second." />
+            <loadDriver name="mssnmpFmSDKPerNodeCpu" description="Dependency Calculation for SDK Netypes, overall cpuminutes for sdk less the no-load cpu minutes divided by the number of nodes supported by a single instance" />
+            <loadDriver name="mssnmpFmSDKPerNodeMemMB" description="Dependency Calculation for for SDK Netypes, overall memory for sdk less the no-load memory  divided by the number of nodes supported by a single instance" />
+        </loadDrivers>
+        <minimumUnit>
+            <profile>
+                <cpuCores>4</cpuCores>
+                <cpuMinutes>240</cpuMinutes>
+                <peakCpuMinutes>0</peakCpuMinutes>
+                <memory>5800</memory>
+            </profile>
+            <profileConversionFormulae>
+                <cpuCores>4</cpuCores>
+                <cpuMinutes>mssnmpfmSdkMinLoadCpu</cpuMinutes>
+                <peakCpuMinutes>0</peakCpuMinutes>
+                <memory>minimumSDKServiceGroupMemMB</memory>
+            </profileConversionFormulae>
+        </minimumUnit>
+        <optimalUnit>
+            <!-- The optimalUnit.profile defines the amount of cpu/memory available to the optimalUnit. -->
+            <profile>
+                <cpuCores>4</cpuCores>
+                <cpuMinutes>1728</cpuMinutes>
+                <peakCpuMinutes>0</peakCpuMinutes>
+                <!-- optimalUnit peak cpu is zerod becasue we are not using it to scale instances only cpu minutes being used.-->
+                <memory>5800</memory>
+            </profile>
+            <!-- The optimalUnit.profileConversionFormulae defines how cpu usage varies depending on the loadDrivers variation.
+                 When cpu resulting from profileConfersionFormulae exceeds the cpu of optimalUnit.profile
+                 session, the system must be scaled horizontally, by increasing the number of instances of a VM
+            -->
+            <profileConversionFormulae>
+                <cpuCores>4</cpuCores>
+                <cpuMinutes>(mssnmpfmSdkMinLoadCpu+(numberSdkIntegratedNe*mssnmpFmSDKPerNodeCpu))</cpuMinutes>
+                <peakCpuMinutes>0</peakCpuMinutes>
+                <memory>mssnmpFmSdkMemMB</memory>
+            </profileConversionFormulae>
+        </optimalUnit>
+    </scaleUnit>
+    <parameters>
+        <property name="mssnmpfmSdkMinLoadCpu" defaultValue="240" description="Measured Minimum CPU load per day in minutes when normally dimensioned VM is run under no load Mediation" />
+        <property name="mssnmpfmMinLoadMemMB" defaultValue="3800" description="Measured Minimum Memory load per day MB when normally dimensioned VM is run under no load Mediation" />
+        <property name="mssnmpFmSdkCpu" defaultValue="1728" description="Measured cpu minutes per day for management of Category 1 Nodes mssnmpfm_cat1_Pull " />
+        <property name="mssnmpFmSdkMemMB" defaultValue="5800" description="Measured memory for management of FMSDk nodes" />
+        <property name="mssnmpcFmSdkSingleInstNum" defaultValue="5000" description="Tested capability in number of nodes of a single instance for category 1 mssnmpfm_cat1_Pull Testing" />
+    </parameters>
+    <deploymentDependencies>
+        <deploymentDependency>
+            <groupId>com.ericsson.oss.servicegroupcontainers</groupId>
+            <artifactId>push_pull_category_breakdown</artifactId>
+            <version />
+            <alias>push_pull_category_breakdown</alias>
+            <qualifier>Not Required</qualifier>
+            <loadDriverConverters>
+                <loadConversionFormula dependencyLoadDriver="minimumSDKServiceGroupMemMB">
+                    <!--Number total of nodes using Snmp pull Mode-->(2002)</loadConversionFormula>
+                <loadConversionFormula dependencyLoadDriver="mssnmpFmSDKPerNodeCpu">
+                    <!--Number total of nodes using Snmp pull Mode-->(mssnmpFmSdkCpu-mssnmpfmSdkMinLoadCpu)/mssnmpcFmSdkSingleInstNum</loadConversionFormula>
+                <loadConversionFormula dependencyLoadDriver="mssnmpFmSDKPerNodeMemMB">
+                    <!--Number total of nodes using Snmp pull Mode-->(mssnmpFmSdkMemMB-mssnmpfmMinLoadMemMB)/mssnmpcFmSdkSingleInstNum</loadConversionFormula>
+            </loadDriverConverters>
+        </deploymentDependency>
+        <deploymentDependency>
+            <groupId>com.ericsson.oss.servicegroupcontainers</groupId>
+            <artifactId>mssnmpfm</artifactId>
+            <version />
+            <alias>keyDimensioningValues_numberofNodes_snmpAlarmsPerDay</alias>
+            <qualifier>Not Required</qualifier>
+            <loadDriverConverters>
+                <loadConversionFormula dependencyLoadDriver="baseAlarmRatePerSecondSdk">
+                    (0.000955)<!--use same base alarmrate as mssnmpfm--></loadConversionFormula>
+                <loadConversionFormula dependencyLoadDriver="alarmInflowPerDay">
+                    ((baseAlarmRatePerSecondSdk*numberSdkIntegratedNe)*60*60*24)<!--automatically calculates the key dimensioning value which is the number of alarms per day from mssnmpfmSDK--></loadConversionFormula>
+                <loadConversionFormula dependencyLoadDriver="numberOfNodes">(numberSdkIntegratedNe)<!--number of nodes specifically managed through mssnmpfmSDK--></loadConversionFormula>
+                <loadConversionFormula dependencyLoadDriver="numberConcurrentConnectionsToManagedNetwork">(numberSdkIntegratedNe)<!--automatically calculates the key dimensioning value which is the sum of numberofnodes calculations from mssnmpfmSDK--></loadConversionFormula>
+            </loadDriverConverters>
+        </deploymentDependency>
+    </deploymentDependencies>
+</configEntity>
+
